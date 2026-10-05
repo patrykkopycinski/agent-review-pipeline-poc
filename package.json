@@ -10,6 +10,7 @@
   "scripts": {
     "lint": "tsc --noEmit",
     "test": "vitest run",
+    "test:node": "node --test tests/sanitize-review.node.mjs",
     "typecheck": "tsc --noEmit",
     "cli": "node --experimental-strip-types src/cli.ts"
   },

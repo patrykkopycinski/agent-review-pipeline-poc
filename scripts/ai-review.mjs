@@ -21,6 +21,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sanitizeAndCap } from './sanitize-review.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -86,11 +87,13 @@ if (!res.ok) {
 }
 
 const data = await res.json();
-const review = data?.choices?.[0]?.message?.content?.trim();
-if (!review) {
+const rawReview = data?.choices?.[0]?.message?.content?.trim();
+if (!rawReview) {
   console.error('[ai-review] model returned an empty review');
   process.exit(1);
 }
+// The review quotes an attacker-controlled diff: strip workflow-like content and cap the length.
+const review = sanitizeAndCap(rawReview);
 
 if (dryRun) {
   process.stdout.write(`${review}\n`);
