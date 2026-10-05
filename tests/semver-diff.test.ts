@@ -92,3 +92,33 @@ describe('compareSemver', () => {
     expect(compareSemver('1.0.0+build.1', '1.0.0+build.2')).toBe(0);
   });
 });
+
+describe('compareSemver edge cases', () => {
+  it('is reflexive and antisymmetric', () => {
+    expect(compareSemver('1.2.3-rc.1', '1.2.3-rc.1')).toBe(0);
+    expect(compareSemver('1.0.0', '2.0.0')).toBe(-compareSemver('2.0.0', '1.0.0'));
+  });
+
+  it('ranks a shorter prerelease below a longer one with the same prefix', () => {
+    expect(compareSemver('1.0.0-alpha', '1.0.0-alpha.1')).toBe(-1);
+  });
+
+  it('ranks numeric identifiers below alphanumeric ones', () => {
+    expect(compareSemver('1.0.0-1', '1.0.0-alpha')).toBe(-1);
+  });
+
+  it('compares core versions numerically, not lexicographically', () => {
+    expect(compareSemver('1.10.0', '1.9.0')).toBe(1);
+  });
+
+  it('throws on invalid input', () => {
+    expect(() => compareSemver('nope', '1.0.0')).toThrow();
+  });
+
+  // Known bug flagged by the AI review on PR #1: compareIdentifiers uses
+  // localeCompare, so "10" sorts before "2". `it.fails` keeps CI green while
+  // documenting the defect; flip to `it` once the bug is fixed.
+  it.fails('orders numeric prerelease identifiers numerically', () => {
+    expect(compareSemver('1.0.0-beta.2', '1.0.0-beta.10')).toBe(-1);
+  });
+});
