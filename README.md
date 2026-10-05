@@ -58,8 +58,11 @@ flowchart LR
    (`blocker` / `major` / `minor` / `nit`) and include a concrete fix.
 4. The agent (`node scripts/ai-review.mjs $PR_NUMBER`) sends it to OpenRouter
    (`https://openrouter.ai/api/v1`, model from `REVIEW_MODEL`, default `anthropic/claude-sonnet-4.5`)
-   using the `OPENROUTER_API_KEY` repo secret and produces a Markdown review.
-5. The review is posted to the PR conversation with `gh pr comment` using `GITHUB_TOKEN`
+   using the `OPENROUTER_API_KEY` repo secret and produces a Markdown review. The `REVIEW_MODEL`
+   env var (a repo variable in CI) overrides the default model.
+5. Before posting, `scripts/sanitize-review.mjs` strips workflow-trigger lines (`on:`, `runs-on:`,
+   `uses:`) and fenced workflow YAML from the comment body and caps it at 6000 characters.
+   The review is posted to the PR conversation with `gh pr comment` using `GITHUB_TOKEN`
    (`permissions: pull-requests: write, contents: read`).
 
 Run the same agent locally:
@@ -78,7 +81,8 @@ its output posted manually to PR #1 and PR #2 to validate the prompt/format —
 those manual comments have since been deleted. The workflow was then rewritten
 to `node scripts/ai-review.mjs` via `OPENROUTER_API_KEY`, and every review
 comment currently on the PRs is `github-actions[bot]` output from the green
-workflow. Keeping the failed runs public: the iteration is the demo.
+workflow. Three additional runs were cancelled (concurrent duplicates superseded by the workflow's
+`cancel-in-progress` concurrency group). Keeping the failed runs public: the iteration is the demo.
 
 ## Demo pull requests
 
