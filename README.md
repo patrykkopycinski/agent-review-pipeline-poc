@@ -76,8 +76,14 @@ node scripts/ai-review.mjs <pr-number>
 
 ## Screenshots
 
-| Evidence | File |
-|---|---|
-| GitHub Actions tab running the CI jobs | `~/evidence/shot-1-pipeline.png` |
-| `ai-review` job logs while reviewing | `~/evidence/shot-2-review-logs.png` |
-| PR conversation with the agent's review comment | `~/evidence/shot-3-pr-comment.png` |
+### 1. CI pipeline in the Actions tab
+![Actions tab with CI jobs](docs/screenshots/shot-1-pipeline.png)
+
+### 2. `ai-review` job logs
+Not captured yet. The `AI Code Review` workflow currently fails with `401 Unauthorized` because the
+repo has no `OPENAI_API_KEY` secret. Add it, re-run the job, then save the log view as
+`docs/screenshots/shot-2-review-logs.png`. Until then the reviews on #1 and #2 were posted by running
+`scripts/ai-review.mjs` against an OpenAI-compatible gateway.
+
+### 3. Agent review comment on PR #1
+![PR #1 with the agent review comment](docs/screenshots/shot-3-pr-comment.png)
