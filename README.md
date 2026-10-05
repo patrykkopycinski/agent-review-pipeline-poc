@@ -41,7 +41,7 @@ flowchart LR
     CI --> L[lint: tsc --noEmit]
     CI --> T[test: vitest]
     REV --> D[gh pr diff PR_NUMBER]
-    D --> AG[review agent<br/>codex exec / scripts/ai-review.mjs]
+    D --> AG[review agent<br/>scripts/ai-review.mjs → OpenRouter]
     AG -->|findings, file:line, severity, fix| C[gh pr comment]
     C --> PR[PR conversation]
     L --> PR
@@ -56,15 +56,16 @@ flowchart LR
 3. The diff is combined with the system prompt in `prompts/code-review.md`, which instructs the
    agent to return findings that each cite `path:line`, carry a severity
    (`blocker` / `major` / `minor` / `nit`) and include a concrete fix.
-4. The agent (`codex exec --sandbox read-only` in CI, or `scripts/ai-review.mjs` locally
-   against any OpenAI-compatible gateway) produces a Markdown review.
-5. The review is posted to the PR conversation with `gh pr comment`.
+4. The agent (`node scripts/ai-review.mjs $PR_NUMBER`) sends it to OpenRouter
+   (`https://openrouter.ai/api/v1`, model from `REVIEW_MODEL`, default `anthropic/claude-sonnet-4.5`)
+   using the `OPENROUTER_API_KEY` repo secret and produces a Markdown review.
+5. The review is posted to the PR conversation with `gh pr comment` using `GITHUB_TOKEN`
+   (`permissions: pull-requests: write, contents: read`).
 
 Run the same agent locally:
 
 ```bash
-export LLM_BASE_URL=https://your-gateway/v1
-export LLM_API_KEY=...
+export OPENROUTER_API_KEY=...   # optional: REVIEW_MODEL, LLM_BASE_URL
 node scripts/ai-review.mjs <pr-number>
 ```
 
@@ -80,10 +81,7 @@ node scripts/ai-review.mjs <pr-number>
 ![Actions tab with CI jobs](docs/screenshots/shot-1-pipeline.png)
 
 ### 2. `ai-review` job logs
-Not captured yet. The `AI Code Review` workflow currently fails with `401 Unauthorized` because the
-repo has no `OPENAI_API_KEY` secret. Add it, re-run the job, then save the log view as
-`docs/screenshots/shot-2-review-logs.png`. Until then the reviews on #1 and #2 were posted by running
-`scripts/ai-review.mjs` against an OpenAI-compatible gateway.
+Not captured yet. Save the `AI Code Review` job log view as `docs/screenshots/shot-2-review-logs.png`.
 
 ### 3. Agent review comment on PR #1
 ![PR #1 with the agent review comment](docs/screenshots/shot-3-pr-comment.png)

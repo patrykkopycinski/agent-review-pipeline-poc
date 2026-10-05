@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   agent-review:
-    name: agent-review (codex exec)
+    name: agent-review (OpenRouter)
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
@@ -28,30 +28,12 @@ jobs:
         with:
           node-version: 22
 
-      # The review agent. On the PoC VM the same prompt is driven locally via
-      # scripts/ai-review.mjs against an OpenAI-compatible gateway.
-      - name: Install Codex CLI
-        run: npm install -g @openai/codex
-
-      - name: Run the review agent over the PR diff
+      # The review agent: scripts/ai-review.mjs sends the PR diff + prompts/code-review.md
+      # to OpenRouter and posts the result as a PR comment via gh (GITHUB_TOKEN).
+      - name: Run the review agent and post the PR comment
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-          gh pr diff "$PR_NUMBER" > /tmp/pr.diff
-          {
-            cat prompts/code-review.md
-            printf '\n\n--- PR DIFF ---\n'
-            cat /tmp/pr.diff
-          } > /tmp/review-prompt.txt
-          codex exec --sandbox read-only "$(cat /tmp/review-prompt.txt)" > /tmp/review.md 2>/tmp/review.err || {
-            echo "codex exec failed"; cat /tmp/review.err; exit 1;
-          }
-
-      - name: Post the review as a PR comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr comment "$PR_NUMBER" --body-file /tmp/review.md
+        run: node scripts/ai-review.mjs "$PR_NUMBER"

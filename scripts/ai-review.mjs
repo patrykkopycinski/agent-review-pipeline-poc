@@ -11,9 +11,10 @@
  *   node scripts/ai-review.mjs <pr-number> [--repo owner/name] [--dry-run]
  *
  * Env:
- *   LLM_BASE_URL | OPENAI_BASE_URL        OpenAI-compatible base URL, e.g. http://host:20128/v1
- *   LLM_API_KEY | OPENAI_API_KEY | OMNIROUTE_API_KEY
- *   LLM_MODEL                             default: auto/best-coding
+ *   OPENROUTER_API_KEY                    API key (CI secret). Fallbacks: LLM_API_KEY | OPENAI_API_KEY
+ *   LLM_BASE_URL | OPENAI_BASE_URL        default: https://openrouter.ai/api/v1
+ *   REVIEW_MODEL | LLM_MODEL              default: anthropic/claude-sonnet-4.5
+ *   GH_TOKEN | GITHUB_TOKEN               used by gh to read the diff and post the comment
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -34,14 +35,21 @@ if (!prNumber) {
   process.exit(2);
 }
 
-const baseUrl = (process.env.LLM_BASE_URL || process.env.OPENAI_BASE_URL || '').replace(/\/+$/, '');
-const apiKey =
-  process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || process.env.OMNIROUTE_API_KEY;
-const model = process.env.LLM_MODEL || 'auto/best-coding';
+const baseUrl = (
+  process.env.LLM_BASE_URL ||
+  process.env.OPENAI_BASE_URL ||
+  'https://openrouter.ai/api/v1'
+).replace(/\/+$/, '');
+const apiKey = process.env.OPENROUTER_API_KEY || process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
+const model = process.env.REVIEW_MODEL || process.env.LLM_MODEL || 'anthropic/claude-sonnet-4.5';
 
-if (!baseUrl || !apiKey) {
-  console.error('missing LLM_BASE_URL / LLM_API_KEY (see script header)');
+if (!apiKey) {
+  console.error('missing OPENROUTER_API_KEY (see script header)');
   process.exit(2);
+}
+
+if (!process.env.GH_TOKEN && process.env.GITHUB_TOKEN) {
+  process.env.GH_TOKEN = process.env.GITHUB_TOKEN;
 }
 
 const repoFlag = repo ? ['--repo', repo] : [];
