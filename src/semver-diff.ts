@@ -18,6 +18,8 @@ export interface Semver {
 const SEMVER_RE =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 
+const NUMERIC_ID_RE = /^\d+$/;
+
 /** Parse a semver string, throwing on malformed input. */
 export function parseSemver(input: string): Semver {
   const match = SEMVER_RE.exec(input.trim());
@@ -96,6 +98,16 @@ export function compareSemver(a: string, b: string): -1 | 0 | 1 {
  * numerically and always rank below alphanumeric ones (SemVer §11.4.3-11.4.4).
  */
 function compareIdentifiers(a: string, b: string): -1 | 0 | 1 {
-  const cmp = a.localeCompare(b);
-  return cmp < 0 ? -1 : cmp > 0 ? 1 : 0;
+  const aNumeric = NUMERIC_ID_RE.test(a);
+  const bNumeric = NUMERIC_ID_RE.test(b);
+  if (aNumeric && bNumeric) {
+    // BigInt keeps very long numeric identifiers exact.
+    const na = BigInt(a);
+    const nb = BigInt(b);
+    return na < nb ? -1 : na > nb ? 1 : 0;
+  }
+  if (aNumeric) return -1;
+  if (bNumeric) return 1;
+  // Alphanumeric identifiers compare lexically in ASCII order (not locale order).
+  return a < b ? -1 : a > b ? 1 : 0;
 }
