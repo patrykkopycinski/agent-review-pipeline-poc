@@ -1,0 +1,71 @@
+import { describe, expect, it } from 'vitest';
+import {
+  classifyBump,
+  formatSemver,
+  isPrerelease,
+  parseSemver,
+} from '../src/semver-diff.js';
+
+describe('parseSemver', () => {
+  it('parses a plain version', () => {
+    expect(parseSemver('1.2.3')).toEqual({
+      major: 1,
+      minor: 2,
+      patch: 3,
+      prerelease: [],
+      build: [],
+    });
+  });
+
+  it('parses a prerelease version', () => {
+    expect(parseSemver('1.2.3-beta.1').prerelease).toEqual(['beta', '1']);
+  });
+
+  it('parses build metadata', () => {
+    expect(parseSemver('1.2.3+build.42').build).toEqual(['build', '42']);
+  });
+
+  it('trims surrounding whitespace', () => {
+    expect(parseSemver('  2.0.0  ').major).toBe(2);
+  });
+
+  it('rejects invalid input', () => {
+    expect(() => parseSemver('1.2')).toThrow(/Invalid semver/);
+  });
+
+  it('rejects leading-zero components', () => {
+    expect(() => parseSemver('01.2.3')).toThrow(/Invalid semver/);
+  });
+});
+
+describe('formatSemver', () => {
+  it('round-trips a prerelease + build version', () => {
+    const v = parseSemver('1.2.3-beta.1+exp.sha.5114f85');
+    expect(formatSemver(v)).toBe('1.2.3-beta.1+exp.sha.5114f85');
+  });
+});
+
+describe('isPrerelease', () => {
+  it('detects prerelease tags', () => {
+    expect(isPrerelease(parseSemver('1.0.0-rc.1'))).toBe(true);
+    expect(isPrerelease(parseSemver('1.0.0'))).toBe(false);
+  });
+});
+
+describe('classifyBump', () => {
+  it('classifies a major bump', () => {
+    expect(classifyBump('1.2.3', '2.0.0')).toBe('major');
+  });
+
+  it('classifies a minor bump', () => {
+    expect(classifyBump('1.2.3', '1.3.0')).toBe('minor');
+  });
+
+  it('classifies a patch bump', () => {
+    expect(classifyBump('1.2.3', '1.2.4')).toBe('patch');
+  });
+
+  it('returns none for identical versions', () => {
+    expect(classifyBump('1.2.3', '1.2.3')).toBe('none');
+  });
+});

@@ -1,0 +1,21 @@
+{
+  "name": "agent-review-pipeline-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PoC: CI/CD pipeline with an AI agent doing code review on pull requests",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "cli": "node --experimental-strip-types src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

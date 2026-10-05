@@ -1,0 +1,57 @@
+name: AI Code Review
+
+# Runs the code-review agent on every PR opened / updated and posts the review
+# back to the PR conversation as a comment.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  agent-review:
+    name: agent-review (codex exec)
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The review agent. On the PoC VM the same prompt is driven locally via
+      # scripts/ai-review.mjs against an OpenAI-compatible gateway.
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Run the review agent over the PR diff
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh pr diff "$PR_NUMBER" > /tmp/pr.diff
+          {
+            cat prompts/code-review.md
+            printf '\n\n--- PR DIFF ---\n'
+            cat /tmp/pr.diff
+          } > /tmp/review-prompt.txt
+          codex exec --sandbox read-only "$(cat /tmp/review-prompt.txt)" > /tmp/review.md 2>/tmp/review.err || {
+            echo "codex exec failed"; cat /tmp/review.err; exit 1;
+          }
+
+      - name: Post the review as a PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr comment "$PR_NUMBER" --body-file /tmp/review.md
