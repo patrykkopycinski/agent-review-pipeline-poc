@@ -69,6 +69,17 @@ export OPENROUTER_API_KEY=...   # optional: REVIEW_MODEL, LLM_BASE_URL
 node scripts/ai-review.mjs <pr-number>
 ```
 
+## Iteration history (honest)
+
+The first three `ai-review` runs failed (runs visible in the Actions tab): the
+original design called `codex exec` with an `OPENAI_API_KEY` secret that was
+never provisioned. During debugging the same review script was run locally and
+its output posted manually to PR #1 and PR #2 to validate the prompt/format —
+those manual comments have since been deleted. The workflow was then rewritten
+to `node scripts/ai-review.mjs` via `OPENROUTER_API_KEY`, and every review
+comment currently on the PRs is `github-actions[bot]` output from the green
+workflow. Keeping the failed runs public: the iteration is the demo.
+
 ## Demo pull requests
 
 - **PR #1** — adds `compareSemver` (SemVer §11 precedence) with a deliberate subtle defect; the
