@@ -61,3 +61,41 @@ export function classifyBump(from: string, to: string): Bump {
   if (b.patch > a.patch) return 'patch';
   return 'none';
 }
+
+/**
+ * Compare two versions by SemVer 2.0.0 precedence.
+ *
+ * Returns `-1` when `a` has lower precedence than `b`, `1` when higher and `0`
+ * when the two are equal. Build metadata is ignored, per SemVer §10.
+ */
+export function compareSemver(a: string, b: string): -1 | 0 | 1 {
+  const va = parseSemver(a);
+  const vb = parseSemver(b);
+
+  for (const key of ['major', 'minor', 'patch'] as const) {
+    if (va[key] !== vb[key]) return va[key] < vb[key] ? -1 : 1;
+  }
+
+  // A version without a prerelease outranks the same core with one (SemVer §11.3).
+  if (va.prerelease.length === 0 && vb.prerelease.length === 0) return 0;
+  if (va.prerelease.length === 0) return 1;
+  if (vb.prerelease.length === 0) return -1;
+
+  // Both carry prereleases: compare identifiers left to right (SemVer §11.4).
+  const shared = Math.min(va.prerelease.length, vb.prerelease.length);
+  for (let i = 0; i < shared; i++) {
+    const cmp = compareIdentifiers(va.prerelease[i]!, vb.prerelease[i]!);
+    if (cmp !== 0) return cmp;
+  }
+  if (va.prerelease.length === vb.prerelease.length) return 0;
+  return va.prerelease.length < vb.prerelease.length ? -1 : 1;
+}
+
+/**
+ * Compare two prerelease identifiers. Numeric identifiers are compared
+ * numerically and always rank below alphanumeric ones (SemVer §11.4.3-11.4.4).
+ */
+function compareIdentifiers(a: string, b: string): -1 | 0 | 1 {
+  const cmp = a.localeCompare(b);
+  return cmp < 0 ? -1 : cmp > 0 ? 1 : 0;
+}
