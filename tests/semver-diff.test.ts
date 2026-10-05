@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   classifyBump,
+  compareSemver,
   formatSemver,
   isPrerelease,
   parseSemver,
@@ -67,5 +68,27 @@ describe('classifyBump', () => {
 
   it('returns none for identical versions', () => {
     expect(classifyBump('1.2.3', '1.2.3')).toBe('none');
+  });
+});
+
+describe('compareSemver', () => {
+  it('orders by major, then minor, then patch', () => {
+    expect(compareSemver('1.2.3', '2.0.0')).toBe(-1);
+    expect(compareSemver('1.3.0', '1.2.9')).toBe(1);
+    expect(compareSemver('1.2.3', '1.2.4')).toBe(-1);
+  });
+
+  it('treats a release as higher than its prerelease', () => {
+    expect(compareSemver('1.0.0', '1.0.0-rc.1')).toBe(1);
+    expect(compareSemver('1.0.0-alpha', '1.0.0')).toBe(-1);
+  });
+
+  it('orders prerelease identifiers', () => {
+    expect(compareSemver('1.0.0-alpha', '1.0.0-beta')).toBe(-1);
+    expect(compareSemver('1.0.0-beta.2', '1.0.0-beta')).toBe(1);
+  });
+
+  it('ignores build metadata', () => {
+    expect(compareSemver('1.0.0+build.1', '1.0.0+build.2')).toBe(0);
   });
 });
