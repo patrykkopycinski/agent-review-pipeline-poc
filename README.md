@@ -81,7 +81,7 @@ node scripts/ai-review.mjs <pr-number>
 ![Actions tab with CI jobs](docs/screenshots/shot-1-pipeline.png)
 
 ### 2. `ai-review` job logs
-Not captured yet. Save the `AI Code Review` job log view as `docs/screenshots/shot-2-review-logs.png`.
+![AI Code Review job logs: agent reviews PR #1 diff and posts comment](docs/screenshots/shot-2-review-logs.png)
 
 ### 3. Agent review comment on PR #1
 ![PR #1 with the agent review comment](docs/screenshots/shot-3-pr-comment.png)
